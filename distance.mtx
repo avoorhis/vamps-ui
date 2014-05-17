@@ -1,0 +1,7 @@
+DISTANCE MATRIX(jaccard)
+		SLM_NIH_Bv4v5--1St_120_Richmond(4)	SLM_NIH_Bv4v5--1St_152_Metro_North(5)	SLM_NIH_Bv4v5--1St_114_Hardinsburg(6)	SLM_NIH_Bv4v5--1St_107_Burkburnett(7)
+SLM_NIH_Bv4v5--1St_120_Richmond(4)	0.0	0.0	0.0	0.0
+SLM_NIH_Bv4v5--1St_152_Metro_North(5)	0.0	0.0	0.0	0.0
+SLM_NIH_Bv4v5--1St_114_Hardinsburg(6)	0.0	0.0	0.0	0.0
+SLM_NIH_Bv4v5--1St_107_Burkburnett(7)	0.0	0.0	0.0	0.0
+
