@@ -1,7 +1,10 @@
 
+require 'pathname'
 require 'constants'
 require 'rinruby'
 require 'sample'
+require 'scripts'
+
 #R.eval('.libPaths("C:/Users/R library path")')
 RR=RinRuby.new(:echo=>false)
 
@@ -40,38 +43,39 @@ class ProjectDatasetAccumulator
 	# since there are fewer otus than seqs => could use place holders?
 	
 #================================================================================================#    
-	def initialize(initializer, sql_client)
-	    @verbose = initializer[:verbose]
+	def initialize(myconfig, sql_client)
+	    @myconfig = myconfig
+	    @verbose = @myconfig[:verbose]
 	    if @verbose
-	        puts "\nInitialization Object:\n"+initializer.inspect
+	        puts "\nInitialization Object:\n"+ @myconfig.inspect
 	    end
-	    
+	    @myscripts = Scripts.new()
 	    @sql_client = sql_client
-		@units = initializer[:units]
+		  @units = @myconfig[:units]
 		
-		dataset_ids = initializer[:ids].flatten.collect { |i| i.to_i } # change string to int
-		@dataset_names_by_id, @datasets_by_project_selected = make_datasets_by_project_hash(dataset_ids)
-		@dataset_ids_order = validate_and_clean_ds_id_list(dataset_ids) # removes ids that are not in db
-		@samples = []
-		@dataset_ids_order.each do |id|
-		    @samples << Sample.new(id)
-		end
-		if @units == 'taxonomy' || @units == 'tax_silva108'
-		    @nas  = initializer[:nas]
-		    @taxa = initializer[:taxa]
-		    @rank = initializer[:rank]
-		    @sort = initializer[:sort]
-		    pdr_result = get_seq_tax_counts_sql_result()
-		    @counts_sum_per_dataset_id = make_sum_counts_per_dataset_id(pdr_result)
-		    @seq_ids_per_dataset_id = make_seq_ids_per_dataset_id(pdr_result)
-		    counts_per_taxon_no_zeros = make_taxon_strings_w_counts_per_dataset_id(pdr_result)
-		    @counts_per_taxon = fill_zeros_and_set_ds_order(counts_per_taxon_no_zeros)
-		    @counts_per_dataset_id, @tax_in_order = get_counts_per_dataset_id()
-		    #@R_tax_matrix_string = create_tax_matrix_string()  # this is a text matrix
-		    #R_testing()    
+		  dataset_ids = @myconfig[:ids].flatten.collect { |i| i.to_i } # change string to int
+		  @dataset_names_by_id, @datasets_by_project_selected = make_datasets_by_project_hash(dataset_ids)
+		  @dataset_ids_order = validate_and_clean_ds_id_list(dataset_ids) # removes ids that are not in db
+		  @samples = []
+		  @dataset_ids_order.each do |id|
+		     @samples << Sample.new(id)
+		  end
+		  if @units == 'taxonomy' || @units == 'tax_silva108'
+  		    @nas  = @myconfig[:nas]
+  		    @taxa = @myconfig[:taxa]
+  		    @rank = @myconfig[:rank]
+  		    @sort = @myconfig[:sort]
+  		    pdr_result = get_seq_tax_counts_sql_result()
+  		    @counts_sum_per_dataset_id = make_sum_counts_per_dataset_id(pdr_result)
+  		    @seq_ids_per_dataset_id = make_seq_ids_per_dataset_id(pdr_result)
+  		    counts_per_taxon_no_zeros = make_taxon_strings_w_counts_per_dataset_id(pdr_result)
+  		    @counts_per_taxon = fill_zeros_and_set_ds_order(counts_per_taxon_no_zeros)
+  		    @counts_per_dataset_id, @tax_in_order = get_counts_per_dataset_id()
+  		    #@R_tax_matrix_string = create_tax_matrix_string()  # this is a text matrix
+  		    #R_testing()    
 
    
-		end
+  		end
 		
 
 	end
@@ -103,40 +107,27 @@ class ProjectDatasetAccumulator
 
 	end
 #================================================================================================#
-	def distance_matrix(filename, metric)
-	    require 'distance'
-	    distmatrix = R_distance.get_dist_matrix(metric)
-	    print_distance_matrix(filename, distmatrix, metric)
-	end
-#================================================================================================#
-	def print_distance_matrix(filename, metric)
-	
-	    puts "\nStarting to write distance file: ./"+filename
+	def create_distance_matrix()
+	    # distance relies on counts table so we need to check for it
+	    counts_table_path = @myconfig[:files_dir]+@myconfig[:tax_output_filename]
+	    distance_table_path = @myconfig[:files_dir]+@myconfig[:dist_output_filename]
+	    if !File.exist?(counts_table_path)
+	      puts 'CREATING COUNTS TABLE '+counts_table_path
+	      print_counts_table()
+      end
+	    puts 'RUN DISTANCE SCRIPT'
+	    args = [
+	      counts_table_path,  # infile
+	      distance_table_path, # outfile
+	      @myconfig[:dmetric], # distance matrix
+	    ]
+	    outfile = @myscripts.run(:distance, args)
 	    
-	    distmatrix = get_R_distance(metric)
-	    	    
-	    txt = "DISTANCE MATRIX("+metric+")\r\n\t"
-	    # header
-	    @dataset_ids_order.each do |id|
-		    txt += "\t" + @dataset_names_by_id[id]+'('+id.to_s+')'
-		end
-		txt += "\r\n"
-		n=0
-		distmatrix.row_vectors.each do |i|
-		    id = @dataset_ids_order[n]
-		    txt += @dataset_names_by_id[id]+'('+id.to_s+')'
-		    i.each do |d|
-		        txt += "\t"+d.to_s
-		    end
-		    txt += "\r\n"
-		    n+=1
-		end
-		txt += "\r\n"
-	    File.open(filename, 'w') { |file| file.write(txt) }
-	    puts "Done writing distance file\n\n"
 	end
+
 #================================================================================================#	
-	def print_counts_table(filename)
+	def print_counts_table()
+	  filename = @myconfig[:files_dir]+@myconfig[:tax_output_filename]
 	    puts "\nStarting to write counts output file: ./"+filename
 		# units can be tax_silva, tax_rdp, tax_gg, otus, nodes, ...
 		# 		ds1 ds2 ds3

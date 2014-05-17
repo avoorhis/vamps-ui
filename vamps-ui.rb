@@ -20,11 +20,20 @@ rescue Mysql2::Error
   exit 1
 end
 
-tax_output_filename = 'tax_counts.mtx'
-dist_output_filename = 'distance.mtx'
 
-pd_accumulator = ProjectDatasetAccumulator.new(Config::INIT_OBJ, sqlclient)
+myconfig = MyConfig::INIT
+#myconfig['prefix'] = Random.rand(100...999)
+prefix = Time.now.to_i.to_s
+myconfig[:tax_output_filename] += prefix + '.mtx'
+myconfig[:dist_output_filename] += prefix + '.mtx'
+myconfig[:prefix] = prefix
+#myconfig = ParseConfig.new('myconfig.conf')
 
-pd_accumulator.print_counts_table(tax_output_filename)
+
+
+pd_accumulator = ProjectDatasetAccumulator.new(myconfig, sqlclient)
+
+#pd_accumulator.print_counts_table()
+pd_accumulator.create_distance_matrix()
 #pd_accumulator.print_distance_matrix(dist_output_filename, Config::INIT_OBJ[:dmetric])
 #puts "\033[1;31mbold red text\033[0m\n"
