@@ -1,1 +1,5 @@
+# ignore output files
 tax_counts*
+
+# ignore everything in files directory
+files/
