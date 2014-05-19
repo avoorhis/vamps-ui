@@ -17,18 +17,26 @@ module MyConfig
       
       
        INIT = { 
-            ids:   DATASET_ID_ORDER,
+          ids:   DATASET_ID_ORDER,
     #        @@units: 'tax_silva108',  # must be the name of the field in sequence_uniq_infos
-      units: 'taxonomy',
-      rank: RANKS[1],
-      taxa:  'bacteria',
-      nas: true,
-      sort:  true,
-      verbose: true,
-      dmetric: DIST_METRICS[3],
-      files_dir: './files/',
-      tax_output_filename: 'tax_counts',
-      dist_output_filename: 'distance'
+		  units: 'taxonomy',
+		  rank: RANKS[1],
+		  taxa:  'bacteria',
+		  nas: true,
+		  sort:  true,
+		  verbose: true,
+		  normalization: 'percent',    # 'none', 'maximum' or 'percent'
+		  dmetric: DIST_METRICS[3],
+		  files_dir: './files/',
+		  tax_counts_output_filename: 'tax_counts',
+		  dist_output_filename: 'distance',
+		  heatmap_output_filename: 'heatmap',
+		  pcoa_output_filename: 'pcoa',
+		  dendrogram_output_filename: 'dendrogram',
+		  barchart_output_filename: 'barchart',
+		  piechart_output_filename: 'piechart'
+      
+      
     }
       
 end

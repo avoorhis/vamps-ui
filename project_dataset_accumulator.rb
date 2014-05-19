@@ -46,6 +46,7 @@ class ProjectDatasetAccumulator
 	def initialize(myconfig, sql_client)
 	    @myconfig = myconfig
 	    @verbose = @myconfig[:verbose]
+	    @normalization = @myconfig[:normalization]  # if not found will default to 'none'
 	    if @verbose
 	        puts "\nInitialization Object:\n"+ @myconfig.inspect
 	    end
@@ -66,10 +67,14 @@ class ProjectDatasetAccumulator
   		    @rank = @myconfig[:rank]
   		    @sort = @myconfig[:sort]
   		    pdr_result = get_seq_tax_counts_sql_result()
-  		    @counts_sum_per_dataset_id = make_sum_counts_per_dataset_id(pdr_result)
+  		    
+  		    @counts_sum_per_dataset_id, @max_dscnt = make_sum_counts_per_dataset_id(pdr_result)
   		    @seq_ids_per_dataset_id = make_seq_ids_per_dataset_id(pdr_result)
+  		    
+  		    # normalization (if asked for) is done next
   		    counts_per_taxon_no_zeros = make_taxon_strings_w_counts_per_dataset_id(pdr_result)
   		    @counts_per_taxon = fill_zeros_and_set_ds_order(counts_per_taxon_no_zeros)
+  		    
   		    @counts_per_dataset_id, @tax_in_order = get_counts_per_dataset_id()
   		    #@R_tax_matrix_string = create_tax_matrix_string()  # this is a text matrix
   		    #R_testing()    
@@ -109,7 +114,7 @@ class ProjectDatasetAccumulator
 #================================================================================================#
 	def create_distance_matrix()
 	    # distance relies on counts table so we need to check for it
-	    counts_table_path = @myconfig[:files_dir]+@myconfig[:tax_output_filename]
+	    counts_table_path = @myconfig[:files_dir]+@myconfig[:tax_counts_output_filename]
 	    distance_table_path = @myconfig[:files_dir]+@myconfig[:dist_output_filename]
 	    if !File.exist?(counts_table_path)
 	      puts 'CREATING COUNTS TABLE '+counts_table_path
@@ -127,29 +132,32 @@ class ProjectDatasetAccumulator
 
 #================================================================================================#	
 	def print_counts_table()
-	  filename = @myconfig[:files_dir]+@myconfig[:tax_output_filename]
-	    puts "\nStarting to write counts output file: ./"+filename
+	  filename = @myconfig[:files_dir]+@myconfig[:tax_counts_output_filename]
+	  
+	    puts "\nStarting to write counts output file: "+filename
 		# units can be tax_silva, tax_rdp, tax_gg, otus, nodes, ...
 		# 		ds1 ds2 ds3
 		# unit1   1   0   9
 		# unit2   4   4   0
 		# unit3   3   7   1
 		# unit4   0   0   1
-		txt = "TAX-COUNTS"
+		txt = ""
 		@dataset_ids_order.each do |id|
 		    txt += "\t" + @dataset_names_by_id[id]+'('+id.to_s+')'
 		end
 		txt += "\r\n"
+		
 	    @counts_per_taxon.sort.each do |tax, data|
 	        txt += tax
 	        data.each do |d|
 	            txt += "\t"+d[:count].to_s
 	        end
 	        txt += "\r\n"
+	        #txt = txt.sub!(/\t$/, "\r\n") 
 	    end
-	    txt += "TOTALS"
+#	    txt += "TOTALS"
 	    @dataset_ids_order.each do |id|
-	        txt += "\t"+@counts_sum_per_dataset_id[id].to_s
+#	        txt += "\t"+@counts_sum_per_dataset_id[id].to_s
 	    end
         txt += "\r\n"
         File.open(filename, 'w') { |file| file.write(txt) }
@@ -167,10 +175,7 @@ class ProjectDatasetAccumulator
 	def make_dendrogram
 
 	end
-#================================================================================================#
-	def normalize
 
-	end
 #================================================================================================#	
 	def reorder_datasets
 	
@@ -289,6 +294,8 @@ private
                 sum_counts_per_dataset_id[id] = cnt
             end
         end
+        max_ds = sum_counts_per_dataset_id.max_by{|k,v| v}
+        puts max_ds.inspect  # [id, max_cnt]
         # fill zeros
         @dataset_ids_order.each do |id|
             unless sum_counts_per_dataset_id.has_key?(id)
@@ -299,7 +306,7 @@ private
         if @verbose
             puts sum_counts_per_dataset_id.inspect
         end
-        return sum_counts_per_dataset_id        
+        return sum_counts_per_dataset_id, max_ds       
     end
 #================================================================================================#    
     def make_taxon_strings_w_counts_per_dataset_id(my_pdrs)        
@@ -328,6 +335,15 @@ private
                 taxon =''
             end
             
+            if @normalization == 'maximum'
+                cnt = (cnt * @max_dscnt[1]) / @counts_sum_per_dataset_id[id]
+            elsif @normalization == 'percent'
+                puts 'c1 '+cnt.to_s
+                puts '-- '+@counts_sum_per_dataset_id[id].to_s
+                cnt = (cnt.to_f / @counts_sum_per_dataset_id[id])*100
+                puts 'c2 '+cnt.to_s
+            end
+            
             if counts_per_taxon_no_zeros.has_key?(taxon)
                 if h = counts_per_taxon_no_zeros[taxon].find{ |h| h[:dataset_id] == id}
                     h[:count] += cnt
@@ -337,9 +353,26 @@ private
                 
                 #counts_per_taxon[id] += cnt
             else
+                
                 counts_per_taxon_no_zeros[taxon] = [{dataset_id: id, count: cnt}]
             end
         end
+        
+        # now update sum counts if normailzed
+        
+        if @normalization == 'maximum'
+                temp_sum_counts = {}
+                @counts_sum_per_dataset_id.each do |id,c|
+                	temp_sum_counts[id] = @max_dscnt[1]
+                end
+                @counts_sum_per_dataset_id = temp_sum_counts
+            elsif @normalization == 'percent'
+                temp_sum_counts = {}
+                @counts_sum_per_dataset_id.each do |id,c|
+                	temp_sum_counts[id] = 100
+                end
+                @counts_sum_per_dataset_id = temp_sum_counts
+            end
         puts "\ndone creating: counts_per_taxon_no_zeros"
         if @verbose
             puts counts_per_taxon_no_zeros.inspect

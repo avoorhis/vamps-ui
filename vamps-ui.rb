@@ -23,17 +23,24 @@ end
 
 myconfig = MyConfig::INIT
 #myconfig['prefix'] = Random.rand(100...999)
-prefix = Time.now.to_i.to_s
-myconfig[:tax_output_filename] += prefix + '.mtx'
-myconfig[:dist_output_filename] += prefix + '.mtx'
-myconfig[:prefix] = prefix
-#myconfig = ParseConfig.new('myconfig.conf')
-
+timestamp = Time.now.to_i.to_s
+myconfig[:timestamp] = timestamp
+myconfig[:tax_counts_output_filename]      += timestamp + '.mtx'
+myconfig[:dist_output_filename]            += timestamp + '.mtx'
+myconfig[:heatmap_output_filename]         += timestamp + '.mtx'
+myconfig[:pcoa_output_filename]            += timestamp + '.mtx'
+myconfig[:dendrogram_output_filename]      += timestamp + '.mtx'
+myconfig[:barchart_output_filename]        += timestamp + '.mtx'
+myconfig[:piechart_output_filename]        += timestamp + '.mtx'
 
 
 pd_accumulator = ProjectDatasetAccumulator.new(myconfig, sqlclient)
 
-#pd_accumulator.print_counts_table()
+
+pd_accumulator.print_counts_table()
+
 pd_accumulator.create_distance_matrix()
-#pd_accumulator.print_distance_matrix(dist_output_filename, Config::INIT_OBJ[:dmetric])
-#puts "\033[1;31mbold red text\033[0m\n"
+
+
+
+

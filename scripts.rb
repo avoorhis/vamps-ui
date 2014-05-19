@@ -5,7 +5,6 @@ class Scripts
   def initialize
     @myscripts = {
       distance: 'scripts/distance.R',
-      normalize: 'scripts/normalize.R',
       heatmap:  "scripts/heatmap.R", 
       dendrogram: "scripts/dendrgram.R",
       piechart: "scripts/piechart.R",

@@ -60,5 +60,4 @@ if(metric == "Morisita-Horn"){
 
 print(dis);
 
-
 write.matrix(dis, file = out_file_path, sep = "\t")
