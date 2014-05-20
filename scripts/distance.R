@@ -1,5 +1,11 @@
 #  filename: distance.R
 #
+# Expected input file (args[1]):
+# TAB delimited matrix:
+# UNITS ds1 ds2 ds3 ds4
+# tax1  4   7   8   3
+# tax2  0   0   1   0
+# tax3  6   10  2   0
 #
 require(vegan,quietly=TRUE);
 require(MASS)
