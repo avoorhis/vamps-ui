@@ -4,11 +4,12 @@ class Scripts
   
   def initialize
     @myscripts = {
-      distance: 'scripts/distance.R',
-      heatmap:  "scripts/heatmap.R", 
-      dendrogram: "scripts/dendrgram.R",
-      piechart: "scripts/piechart.R",
-      barchart: "scripts/barchart.R"
+      distance:         "scripts/distance.R",
+      heatmap_counts:   "scripts/heatmap_counts.R",
+      heatmap_distance: "scripts/heatmap_distance.R",
+      dendrogram:       "scripts/dendrogram.R",
+      piechart:         "scripts/piechart.R",
+      barchart:         "scripts/barchart.R"
     }
   end
   
@@ -19,9 +20,9 @@ class Scripts
     # Rscript --slave --no-restore ./scripts/distance.R tax_counts1400357817.mtx Morisita-Horn xxx
     cmd = "/usr/bin/Rscript --slave --no-restore" 
     cmd += " "+@myscripts[script]
-    cmd += " "+args[0]   # infile path
-    cmd += " "+args[1]   # outfile path
-    cmd += " "+args[2]   # metric
+    args.each do |arg|
+        cmd += " "+arg.to_s
+    end
     puts cmd
     `#{cmd}`   # runs command
     return args[1]

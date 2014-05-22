@@ -1,12 +1,9 @@
 
 require 'pathname'
 require 'constants'
-require 'rinruby'
 require 'sample'
 require 'scripts'
 
-#R.eval('.libPaths("C:/Users/R library path")')
-RR=RinRuby.new(:echo=>false)
 
 class OTU
 
@@ -108,31 +105,62 @@ class ProjectDatasetAccumulator
 
 	end
 #================================================================================================#
-	def make_heatmap
+	def create_heatmap(matrix_type)
+	
+	    if matrix_type == 'counts'
+	        counts_table_path   = @myconfig[:files_dir]+@myconfig[:tax_counts_output_filename]
+	        heatmap_table_path  = @myconfig[:files_dir]+@myconfig[:heatmap_counts_output_filename]
+	        if !File.exist?(counts_table_path)
+              write_counts_table()
+            end
+            puts 'RUN COUNTS HEATMAP SCRIPT'
+            args = [
+              counts_table_path,    # infile
+              heatmap_table_path,   # outfile
+              matrix_type,
+              @myconfig[:dmetric],  # distance metric
+              @rank                 # rank
+            ]
+	        outfile = @myscripts.run(:heatmap_counts, args)
+	        
+	    elsif matrix_type == 'distance'
+	        distance_table_path = @myconfig[:files_dir]+@myconfig[:dist_output_filename]
+	        heatmap_table_path  = @myconfig[:files_dir]+@myconfig[:heatmap_distance_output_filename]
+	        if !File.exist?(distance_table_path)
+                create_distance_matrix()
+            end
+            puts 'RUN DISTANCE HEATMAP SCRIPT'
+            args = [
+              distance_table_path,    # infile
+              heatmap_table_path,   # outfile
+              matrix_type              
+            ]
+            outfile = @myscripts.run(:heatmap_distance, args)
+            
+	    end
 
 	end
 #================================================================================================#
 	def create_distance_matrix()
 	    # distance relies on counts table so we need to check for it
-	    counts_table_path = @myconfig[:files_dir]+@myconfig[:tax_counts_output_filename]
+	    counts_table_path   = @myconfig[:files_dir]+@myconfig[:tax_counts_output_filename]
 	    distance_table_path = @myconfig[:files_dir]+@myconfig[:dist_output_filename]
 	    if !File.exist?(counts_table_path)
-	      puts 'CREATING COUNTS TABLE '+counts_table_path
-	      print_counts_table()
-      end
+	      write_counts_table()
+        end
 	    puts 'RUN DISTANCE SCRIPT'
 	    args = [
-	      counts_table_path,  # infile
-	      distance_table_path, # outfile
-	      @myconfig[:dmetric], # distance matrix
+	      counts_table_path,    # infile
+	      distance_table_path,  # outfile
+	      @myconfig[:dmetric]  # distance metric
 	    ]
 	    outfile = @myscripts.run(:distance, args)
 	    
 	end
 
 #================================================================================================#	
-	def print_counts_table()
-	  filename = @myconfig[:files_dir]+@myconfig[:tax_counts_output_filename]
+	def write_counts_table()
+	    filename    = @myconfig[:files_dir]+@myconfig[:tax_counts_output_filename]
 	  
 	    puts "\nStarting to write counts output file: "+filename
 		# units can be tax_silva, tax_rdp, tax_gg, otus, nodes, ...
@@ -141,16 +169,20 @@ class ProjectDatasetAccumulator
 		# unit2   4   4   0
 		# unit3   3   7   1
 		# unit4   0   0   1
-		txt = ""
+		txt = "UNITS"
 		@dataset_ids_order.each do |id|
-		    txt += "\t" + @dataset_names_by_id[id]+'('+id.to_s+')'
+		    txt += "\t" + @dataset_names_by_id[id]
 		end
 		txt += "\r\n"
 		
 	    @counts_per_taxon.sort.each do |tax, data|
 	        txt += tax
 	        data.each do |d|
-	            txt += "\t"+d[:count].to_s
+	            cnt = d[:count].to_s
+	            if @normalization == 'percent'
+	                cnt = "%.5f" % [cnt] 
+	            end
+	            txt += "\t"+ cnt
 	        end
 	        txt += "\r\n"
 	        #txt = txt.sub!(/\t$/, "\r\n") 
@@ -164,6 +196,24 @@ class ProjectDatasetAccumulator
         puts "Done writing counts output file\n\n"
 	end
 #================================================================================================#
+	def create_piechart
+        counts_table_path   = @myconfig[:files_dir]+@myconfig[:tax_counts_output_filename]
+        piechart_path       = @myconfig[:files_dir]+@myconfig[:piechart_output_filename]
+        if !File.exist?(counts_table_path)
+	        write_counts_table()
+        end
+        puts 'RUN PIECHART SCRIPT'
+        dataset_id_hash = Hash[@dataset_ids_order.map.with_index.to_a]    # => {id1=>0, id2=>1, id3=>2}
+        dsid = 4
+	    args = [
+	      counts_table_path,        # infile
+	      piechart_path,            # outfile
+	      @dataset_names_by_id[dsid]# name (column)
+	    ]
+	    outfile = @myscripts.run(:piechart, args)
+        
+	end
+#================================================================================================#
 	def make_barcharts
 
 	end
@@ -172,8 +222,22 @@ class ProjectDatasetAccumulator
 
 	end
 #================================================================================================#
-	def make_dendrogram
-
+	def create_dendrogram
+        distance_table_path = @myconfig[:files_dir]+@myconfig[:dist_output_filename]
+        dendrogram_plot_path     = @myconfig[:files_dir]+@myconfig[:dendrogram_plot_output_filename]
+        dendrogram_tree_path     = @myconfig[:files_dir]+@myconfig[:dendrogram_tree_output_filename]
+        if !File.exist?(distance_table_path)
+	        create_distance_matrix()
+        end
+        puts 'RUN DENDROGRAM SCRIPT'
+	    args = [
+	      distance_table_path,      # infile
+	      dendrogram_plot_path,     # outfile tree
+	      dendrogram_tree_path,     # outfile tree
+	      @myconfig[:dmetric],      # distance metric
+	      @myconfig[:method]        # method:       # UPGMA, Average  Kistch, Fitch
+	    ]
+	    outfile = @myscripts.run(:dendrogram, args)
 	end
 
 #================================================================================================#	
@@ -313,6 +377,9 @@ private
         
         
         counts_per_taxon_no_zeros  = {}
+        if @verbose && @normalization.nil?
+            puts "\nNo Normalization Found -- Using Raw Counts!"
+        end
         my_pdrs.each do |row|
             cnt = row['seq_count']
             id  = row['dataset_id']
