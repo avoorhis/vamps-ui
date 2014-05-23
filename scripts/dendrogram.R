@@ -21,8 +21,7 @@ x<-as.dist(x)
 #print(x)
 #pdf(out_file_path, width=10, height=10, title='VAMPS Counts Dendrogram')
 
-hc <- hclust(x, method=method)                # apply hirarchical clustering 
-
+hc <- hclust(x)                # apply hirarchical clustering 
 
 # ape(as.phylo) is a generic function which converts an object into a tree of class "phylo".
 tree<-as.phylo(hc);
@@ -32,15 +31,17 @@ tiplabels<-paste(tree$tip.label,collapse=',');
 numtips<-length(tree$tip.label);
 myheight<- numtips*60;
 #print(paste('edges',edges,"\nlengths",lengths,'tiplabels',tiplabels,'numtips',numtips, sep=' '))
+
 write.tree(tree, file=tree_file_path)
 
 dend <- as.dendrogram(hc)
+
 png(file=out_file_path,  width=900, height=myheight,  bg='#F8F8FF')
-sink('/dev/null');
+
+
 maintitle=paste('VAMPS Cluster Plot Based on Taxonomic Counts (distance metric = ',metric,')\n');
 
 par(mai=c(.5,2.5,.5,4.0));
 plot(dend,horiz=TRUE)
 title(main=maintitle);
 dev.off();
-sink();

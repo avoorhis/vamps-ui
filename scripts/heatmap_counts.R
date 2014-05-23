@@ -8,14 +8,13 @@ library(pheatmap)
 library(RColorBrewer)
 
 args <- commandArgs(TRUE)
-matrix_file_path<- args[1]
-out_file_path   <- args[2]
-matrix_type     <- args[3]
-method          <- args[4]  # distance
-rank            <- args[5]  # rank
+counts_matrix_file_path <- args[1]
+out_file_path           <- args[2]
+metric                  <- args[3]  # distance
+rank                    <- args[4]  # rank
 
 
-data_matrix<-read.delim(matrix_file_path, header=T, sep="\t", check.names=FALSE, row.names=1);
+data_matrix<-read.delim(counts_matrix_file_path, header=T, sep="\t", check.names=FALSE, row.names=1);
 
 x<-as.matrix(data_matrix)
 ncols<-ncol(x)
@@ -107,33 +106,34 @@ if(rank==tolower("Genus") || rank==tolower("species") || rank==tolower("strain")
                     
 
 fontsize_row = 8
+fontsize_col = 8
 
 # clustering methods
-if(method=='Morisita-Horn'){ 
+if(metric=='Morisita-Horn'){ 
     meth <- 'horn'
     text <- "Morisita-Horn"
-}else if(method=='Bray-Curtis'){
+}else if(metric=='Bray-Curtis'){
     meth <- 'bray'
     text <- "Bray-Curtis"
-}else if(method=='Jaccard'){
+}else if(metric=='Jaccard'){
     meth <- 'jaccard'
     text <- "Jaccard"
-}else if(method=='Manhattan'){
+}else if(metric=='Manhattan'){
     meth <- 'manhattan'
     text <- "Manhattan"
-}else if(method=='Gower'){
+}else if(metric=='Gower'){
     meth <- 'gower'
     text <- "Gower"
-}else if(method=='Euclidean'){
+}else if(metric=='Euclidean'){
     meth <- 'euclidean'
     text <- "Euclidean"
-}else if(method=='Canberra'){
+}else if(metric=='Canberra'){
     meth <- 'canberra'
     text <- "Canberra"
-}else if(method=='Kulczynski'){
+}else if(metric=='Kulczynski'){
     meth <- 'kulczynski'
     text <- "Kulczynski"
-}else if(method=='Mountford'){
+}else if(metric=='Mountford'){
     meth <- 'mountford'
     text <- "Mountford"
 }else{
@@ -163,7 +163,8 @@ x1<-scale(x, center=FALSE, scale=colSums(x))
 pheatmap(x1,scale="none", color=mypalette6,
 			clustering_distance_rows=drows,
 			clustering_distance_cols=dcols, margins=c(15,r_margin),
-		    fontsize_row=fontsize_row, cellwidth=12, cellheight=6, main=main_label
+		    fontsize_row=fontsize_row, fontsize_col=fontsize_col,
+		    cellwidth=8, cellheight=8, main=main_label
 		)
 
 dev.off()

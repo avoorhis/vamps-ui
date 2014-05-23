@@ -8,13 +8,11 @@ library(pheatmap)
 library(RColorBrewer)
 
 args <- commandArgs(TRUE)
-matrix_file_path<- args[1]
-out_file_path   <- args[2]
-matrix_type     <- args[3]
+dist_matrix_file_path   <- args[1]
+out_file_path           <- args[2]
+rank                    <- args[3]  # rank
 
-
-
-data_matrix<-read.delim(matrix_file_path, header=T, sep="\t", check.names=FALSE);
+data_matrix<-read.delim(dist_matrix_file_path, header=T, sep="\t", check.names=FALSE);
 
 x<-as.matrix(data_matrix)
 ncols<-ncol(x)
@@ -45,7 +43,7 @@ pdf(out_file_path, width=w, height=h, title=pdf_title)
 fontsize_row = 8
 
 
-main_label=paste("The VAMPS Distance Heatmap\n")
+main_label=paste("The VAMPS Distance Heatmap\n--Taxonomic Level:",rank)
 
 
 #

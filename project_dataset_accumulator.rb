@@ -117,7 +117,6 @@ class ProjectDatasetAccumulator
             args = [
               counts_table_path,    # infile
               heatmap_table_path,   # outfile
-              matrix_type,
               @myconfig[:dmetric],  # distance metric
               @rank                 # rank
             ]
@@ -133,11 +132,14 @@ class ProjectDatasetAccumulator
             args = [
               distance_table_path,    # infile
               heatmap_table_path,   # outfile
-              matrix_type              
+              @rank                 # rank
+                         
             ]
             outfile = @myscripts.run(:heatmap_distance, args)
             
 	    end
+	    
+	    return heatmap_table_path
 
 	end
 #================================================================================================#
@@ -155,7 +157,7 @@ class ProjectDatasetAccumulator
 	      @myconfig[:dmetric]  # distance metric
 	    ]
 	    outfile = @myscripts.run(:distance, args)
-	    
+	    return distance_table_path
 	end
 
 #================================================================================================#	
@@ -194,28 +196,73 @@ class ProjectDatasetAccumulator
         txt += "\r\n"
         File.open(filename, 'w') { |file| file.write(txt) }
         puts "Done writing counts output file\n\n"
+        return filename
 	end
 #================================================================================================#
-	def create_piechart
+	def create_piechart(pie_type, dataset_id=nil)
+	
         counts_table_path   = @myconfig[:files_dir]+@myconfig[:tax_counts_output_filename]
-        piechart_path       = @myconfig[:files_dir]+@myconfig[:piechart_output_filename]
         if !File.exist?(counts_table_path)
 	        write_counts_table()
         end
-        puts 'RUN PIECHART SCRIPT'
-        dataset_id_hash = Hash[@dataset_ids_order.map.with_index.to_a]    # => {id1=>0, id2=>1, id3=>2}
-        dsid = 4
-	    args = [
-	      counts_table_path,        # infile
-	      piechart_path,            # outfile
-	      @dataset_names_by_id[dsid]# name (column)
-	    ]
-	    outfile = @myscripts.run(:piechart, args)
+        
+        if pie_type == 'all'
+            puts 'RUN PIECHART ALL SCRIPT'
+            piechart_path       = @myconfig[:files_dir]+@myconfig[:piechart_all_output_filename]
+            ds_names = []
+            @dataset_ids_order.each do |id|
+                ds_names << @dataset_names_by_id[id]
+            end
+            args = [
+              counts_table_path,        # infile: cols are datasets
+                                        # and in same order as dataset_ids_order list
+              piechart_path,            # outfile
+              ds_names.join(',')        # names in column order
+            ]
+            outfile = @myscripts.run(:piechart_all, args)
+            
+        else
+            puts 'RUN PIECHART SINGLE SCRIPT'
+            piechart_path       = @myconfig[:files_dir]+@myconfig[:piechart_single_output_filename]
+            #dataset_id_hash = Hash[@dataset_ids_order.map.with_index.to_a]    # => {id1=>0, id2=>1, id3=>2}
+            dsid = 4
+            
+            args = [
+              counts_table_path,                # infile: cols are datasets
+                                                # and in same order as dataset_ids_order list
+              piechart_path,                    # outfile
+              @dataset_names_by_id[dataset_id]  # name (column)
+            ]
+            outfile = @myscripts.run(:piechart_single, args)
+        end
+        
+	    
+	    return piechart_path
         
 	end
 #================================================================================================#
-	def make_barcharts
-
+	def create_barcharts
+        counts_table_path   = @myconfig[:files_dir]+@myconfig[:tax_counts_output_filename]
+        barchart_path       = @myconfig[:files_dir]+@myconfig[:barchart_output_filename]
+        if !File.exist?(counts_table_path)
+	        write_counts_table()
+        end
+        
+        
+        puts 'RUN BARCHART SCRIPT'
+        
+        ds_names = []
+        @dataset_ids_order.each do |id|
+            ds_names << @dataset_names_by_id[id]
+        end
+        args = [
+          counts_table_path,        # infile: cols are datasets
+                                    # and in same order as dataset_ids_order list
+          barchart_path,            # outfile
+          @rank                     # rank
+          #ds_names.join(',')        # names in column order
+        ]
+        outfile = @myscripts.run(:barchart, args)
 	end
 #================================================================================================#
 	def alpha_diversity
@@ -238,6 +285,7 @@ class ProjectDatasetAccumulator
 	      @myconfig[:method]        # method:       # UPGMA, Average  Kistch, Fitch
 	    ]
 	    outfile = @myscripts.run(:dendrogram, args)
+	    return dendrogram_plot_path
 	end
 
 #================================================================================================#	
@@ -395,7 +443,7 @@ private
                 taxon = row['domain']+';'+row['phylum']+';'+row['klass']+';'+row['orderx']+';'+row['family']
             elsif @rank == 'genus'
                 taxon = row['domain']+';'+row['phylum']+';'+row['klass']+';'+row['orderx']+';'+row['family']+';'+row['genus']
-            elsif @rank == 'species'
+            elsif @rank == 'species' && row['species'] != ''
                 taxon = row['domain']+';'+row['phylum']+';'+row['klass']+';'+row['orderx']+';'+row['family']+';'+row['genus']+';'+row['species']
             else
                 # ERROR
