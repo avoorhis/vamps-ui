@@ -1,3 +1,5 @@
+#!/usr/bin/env Rscript  --slave --no-restore
+#
 #  filename: distance.R
 #
 # Expected input file (args[1]):

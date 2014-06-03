@@ -1,4 +1,6 @@
-#  filename: heatmap.R
+#!/usr/bin/env Rscript  --slave --no-restore
+#
+#  filename: heatmap_distance.R
 #
 #
 #

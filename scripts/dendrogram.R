@@ -1,3 +1,5 @@
+#!/usr/bin/env Rscript  --slave --no-restore
+#
 #  filename: dendrogram.R
 #
 #

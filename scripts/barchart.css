@@ -1,0 +1,86 @@
+
+
+
+.bar_div {  
+  height: 0px;
+  margin-bottom:20px;
+}
+
+.barChartContainer {
+	
+	padding:10px 0 10px 0;
+	width: 250px;
+	
+  /* border:1px solid green; */ 
+    /*visibility:hidden;*/
+}
+
+table.barChart tr{
+	display:none;
+}
+
+
+table.barChart tr {
+  /*     visibility:collapse; */
+}
+
+
+.barChartWrapper {
+	position: relative;
+	width:25px;
+	top:-20px;
+	padding: 1px 0px 12px 0px;
+	
+	
+/*	border:1px solid red;  */
+/*
+        display: inline;
+	visibility:visible;
+*/
+}
+/* This is the virtual image where the tool tip shows  */	
+.barChartWrapper img {
+	position: absolute;
+	top: 0px;
+	left:0px;
+	width:900px;
+	padding-right:0px;
+	margin-left:-1px;
+	border:1px solid black;
+
+}
+/*	
+img {
+	border:1px solid black;
+	left:0px;
+	
+}
+*/	
+.tool-tip {
+	color: #fff;	
+	z-index: 13000;
+	background: #333;
+	padding: 5px 8px;
+	width:auto;
+}
+ 
+.tool-title {
+	font-weight: bold;
+	font-size: 11px;
+	margin: 0;
+	color: #fff;
+}
+ 
+.tool-text {
+	font-size: 11px;
+	color: #eee;
+}
+
+.clear {
+	clear: both;
+}
+
+
+
+
+

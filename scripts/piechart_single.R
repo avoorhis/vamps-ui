@@ -1,4 +1,6 @@
-#  filename: piechart.R
+#!/usr/bin/env Rscript  --slave --no-restore
+#
+#  filename: piechart_single.R
 #
 # Expected input file (args[1]):
 # TAB delimited matrix:

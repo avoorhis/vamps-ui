@@ -1,0 +1,23 @@
+html {
+
+}
+body {
+
+}
+
+table {
+    border-collapse:collapse;
+    font-size:10px;
+}
+
+#heatmap_tooltip {
+    display:none;
+	background:yellow;
+	border: 2px solid green;
+	font-size:14px;
+	font-weight:normal;
+	height:auto;
+	width:auto;
+	padding:15px 25px;
+	color:black;	
+}

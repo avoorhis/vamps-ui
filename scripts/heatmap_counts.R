@@ -1,3 +1,5 @@
+#!/usr/bin/env Rscript  --slave --no-restore
+#
 #  filename: heatmap.R
 #
 #
@@ -15,8 +17,9 @@ rank                    <- args[4]  # rank
 
 
 data_matrix<-read.delim(counts_matrix_file_path, header=T, sep="\t", check.names=FALSE, row.names=1);
-
+data_matrix<-data_matrix[,colSums(data_matrix) > 0]
 x<-as.matrix(data_matrix)
+
 ncols<-ncol(x)
 nrows<-nrow(x)
 
@@ -101,10 +104,6 @@ if(rank==tolower("Genus") || rank==tolower("species") || rank==tolower("strain")
     r_margin=10
 }
 
-#print(paste("fontsize_row:",fontsize_row))
-
-                    
-
 fontsize_row = 8
 fontsize_col = 8
 
@@ -141,7 +140,9 @@ if(metric=='Morisita-Horn'){
     text <- "Morisita-Horn"
 }
 main_label=paste("The VAMPS Frequency Heatmap\n--Taxonomic Level:",rank,"\n--Clustering: ",text)
+print(x)
 drows<-vegdist(x, method=meth)
+
 dcols<-vegdist(t(x), method=meth, na.rm=TRUE)
 
 

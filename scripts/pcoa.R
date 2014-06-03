@@ -1,118 +1,71 @@
-args <- commandArgs(TRUE)
-matrix_in <- args[1]
-prefix    <- args[2]
-method    <- args[3]
-label_on_plot<- args[4]
+#!/usr/bin/env Rscript  --slave --no-restore
+#
+#  filename: pcoa.R
+#
+#
+#
+#library(vegan);
+library(labdsv)
+#library(RColorBrewer)
+
+args                  <- commandArgs(TRUE)
+dist_matrix_file_path <- args[1]
+out_file_path         <- args[2]
+metric                <- args[3]  # just for labeling
+
+
+label_on_plot<- 'yes'
 if(label_on_plot=='yes'){
 	labels_on_the_plot<-TRUE
 }else{
 	labels_on_the_plot<-FALSE
 }
+unlink(out_file_path)
+distance_matrix<-read.delim(dist_matrix_file_path, header=T, sep="\t", check.names=FALSE);
 
-library(vegan);
-library(labdsv)
-library(RColorBrewer)
+dist <- as.dist(distance_matrix)
+axes=list(c(1:2), c(1,3), c(2:3))
+axes_labels <- c("12", "13", "23")
+pdf(out_file_path,  title="PCoA")
 
+pcoa <- pco(dist, k=3)
+print(pcoa$points[,axes[[3]]])
+#plot(pcoa, title=paste("PCoA\n",metric))
+
+for (ax in c(1,2,3))
+{
+
+    xlabel <- paste("PCOA", substring(axes_labels[ax],1,1), " (", round((pcoa$eig[as.integer(substring(axes_labels[1], 1, 1))]/sum(pcoa$eig[1:3]))*100, 1), "%)", sep="")
+    ylabel <- paste("PCOA", substring(axes_labels[ax],2,2), " (", round((pcoa$eig[as.integer(substring(axes_labels[ax], 2, 2))]/sum(pcoa$eig[1:3]))*100, 1), "%)", sep="")
+ 
+    # The main title for each graph, 
+    main <- paste("PCoA using ", metric)
+    
+    plot(pcoa$points[,axes[[ax]]],  main = main, xlab=xlabel, ylab=ylabel)
+    
+    
+}
+
+
+dev.off()
+q()
+#======END==========================================
 metadata_in<-paste("/usr/local/www/vamps/docs/tmp/",prefix,"_metadata.txt",sep='')
-# the QIIME map file doesnt work well: linkerprimersequence,project,dataset,dataset_description
-mtx<-read.delim(matrix_in, header=T,sep="\t",check.names=TRUE,row.names=1);
+# the QIIME map file doesnt work well: linkerprimersequence, project, dataset, dataset_description
+
 md<-read.delim(metadata_in, header=T,sep="\t",check.names=TRUE,row.names=1);
 tmp_matrix <- mtx[rowSums(mtx) > 0,]
 
 ncols<-ncol(mtx)
 nrows<-nrow(mtx)
 
-last_name = row.names(mtx)[nrows]
-if(last_name == 'ORIGINAL_SUMS'){
-    # remove it -- it screws up the dist calculation    
-    mtx <- mtx[1:nrows-1,]
-}
-
 
 axes=list(c(1:2), c(1,3), c(2:3))
 axes_labels <- c("12", "13", "23")
-stand <-decostand(t(tmp_matrix),"total");
-if(method=="horn")
-{
-    d<-vegdist(stand, method="horn",upper=FALSE,binary=FALSE);
-    method_text<-"Morisita-Horn"
-}else if(method=="bray")
-{
-    d<-vegdist(stand, method="bray",upper=FALSE,binary=FALSE);
-    method_text<-"Bray-Curtis"
-}else if(method=="jaccard")
-{
-    d<-vegdist(stand, method="jaccard",upper=FALSE,binary=TRUE);
-    #d  <- dist(stand, method="binary")
-    method_text<-"Jaccard"
-}else if(method=="yue-clayton")
-{
-    d<-designdist(stand, method="1-(J/(A+B-J))",terms = c( "quadratic"), abcd = FALSE)
-    method_text<-"Yue-Clayton"
-}else if(method=="manhattan")
-{
-    d<-vegdist(stand, method="manhattan",upper=FALSE,binary=FALSE);
-    method_text<-"Manhattan"
-}else if(method=="gower")
-{
-    d<-vegdist(stand, method="gower",upper=FALSE,binary=FALSE);
-    method_text<-"Gower"
-}else if(method=="euclidean")
-{
-    d<-vegdist(stand, method="euclidean",upper=FALSE,binary=FALSE);
-    method_text<-"Euclidean"
-}else if(method=="canberra")
-{
-    d<-vegdist(stand, method="canberra",upper=FALSE,binary=FALSE);
-    method_text<-"Canberra"
-}else if(method=="kulczynski")
-{
-    d<-vegdist(stand, method="kulczynski",upper=FALSE,binary=FALSE);
-    method_text<-"Kulczynski"
-}else if(method=="mountford")
-{
-    dis<-vegdist(stand, method="mountford",upper=FALSE,binary=FALSE);
-    method_text<-"Mountford"
-}else if(method=="pearson")
-{
-    dis<-cor(tmp_matrix, method = 'pearson')
-    d<-(1-abs(dis))
-    method_text<-"Pearson"
-}else if(method=="spearman")
-{
-    dis<-cor(tmp_matrix, method = 'spearman')
-    d<-(1-abs(dis))
-    method_text<-"Spearman"
-}else if(method=="chao_j")
-{
-    require(fossil,quiet=TRUE);
-    d<-ecol.dist(tmp_matrix, method = chao.jaccard, type = "dis");   
-    method_text<-"Chao-Jaccard"
-}else if(method=="chao_s")
-{
-    require(fossil,quiet=TRUE);
-    d<-ecol.dist(tmp_matrix, method = chao.sorenson, type = "dis");   
-    method_text<-"Chao-Sorenson"
-}else{
-    d<-vegdist(stand, method="horn",upper=FALSE,binary=FALSE);
-    method_text<-"Morisita-Horn"
-}
-#'horn'=>'Morisita-Horn',
-#'bray'=>'Bray-Curtis',
-#'jaccard'=>'Jaccard',
-#'yue-clayton'=>'Yue-Clayton', 
-#'manhattan'=>'Manhattan',
-# 'gower'=>'Gower',
-#'euclidean'=>'Euclidean',
-#'canberra'=>'Canberra',
-#'kulczynski'=>'Kulczynski',
-#'mountford'=>'Mountford',
-# 'pearson'=>'Pearson',
-#'correlation'=>'1-Correlation',
-#'spearman'=>'Spearman',
-#'chao_j'=>'Chao-Jaccard',
-#'chao_s'=>'Chao-Sorenson'  
-pcoa <- pco(d, k=4)
+
+
+
+
 #pcoa2 <- pcoa(d)
 #print(pcoa)
 # pcoa$points provides the points for all of the samples (matrix columns), and I have conveniently named my matrix columns

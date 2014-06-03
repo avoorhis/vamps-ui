@@ -27,13 +27,13 @@ print(length(names))
 
 
 
-# check.names=TRUE converts '--' to '..' in project--dataset names (also checks for dups)
-# check.names=FALSE: SLM_NIH_Bv4v5--1St_120_Richmond
-# row.names=1  gives the column of the row names
+#  check.names=TRUE converts '--' to '..' in project--dataset names (also checks for dups)
+#  check.names=FALSE: SLM_NIH_Bv4v5--1St_120_Richmond
+#  row.names=1  gives the column of the row names
 
 x<-read.table(matrix_file_path, header=T, check.names=FALSE, row.names=1);
 #taxnames<-row.names(data_matrix)
-w=20
+w=10
 h=10
 pdf_title<-paste("VAMPS PieChart\n")
 pdf(out_file_path, width=w, height=h, title=pdf_title)
@@ -48,10 +48,7 @@ for(i in 1:length(names))
     #lbls<-paste(names(ds), "\n", ds, sep="")
     
     
-   
-    
-    
-    pie(ds, radius=0.5, main=pdf_title)
+    pie(ds, radius=0.2, labels=NA, main=pdf_title)
 
 }
 

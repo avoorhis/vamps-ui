@@ -1,4 +1,6 @@
-#  filename: piechart_all.R
+#!/usr/bin/env Rscript  --slave --no-restore
+#
+#  filename: barchart.R
 #
 # Expected input file (args[1]):
 # TAB delimited matrix:
@@ -18,11 +20,14 @@ library(plyr)
 library(reshape2)
 library(RColorBrewer)
 library(digest)
-args <- commandArgs(TRUE)
 
+args <- commandArgs(TRUE)
 matrix_file_path<- args[1]
 out_file_path   <- args[2]
 rank            <- args[3]
+show_legend     <- args[4]
+
+
 #names            <- args[3]  # dataset name (column header)
 #print(names)
 #names <- unlist(strsplit(names, split=","))
@@ -40,20 +45,17 @@ pdf(out_file_path, width=w, height=h, title="bars")
 x<-read.table(matrix_file_path, header=T, check.names=FALSE, row.names=1);
 #x <- data.frame(t(x)) 
 #x <- data.frame(x) 
-print(x)
+#print(x)
 
 # get rid of ds with all zeros
-#x<-x[,colSums(x) > 0]
+x<-x[,colSums(x) > 0]
 
 colourCount = nrow(x)
 
-#print(colSums(x))
-#max<-max(colSums(x))
-max_df<-x*100  # will multiply each elem by 100 to normalize
 
-x<-data.frame(scale(max_df, center=FALSE, scale=colSums(x) != 0)) 
+x<-data.frame(scale(x, center=FALSE, scale=colSums(x))) 
 
-print(x)
+#print(x)
 #print(colSums(x))
 #print(colnames(x))
 taxnames = rownames(x)
@@ -81,11 +83,20 @@ data.wide <- melt(t(x))
 #cols<- c("Tax1"="darkgrey","Tax2"="lightgrey", "Tax3"="white", "Tax5"="black","Tax6"="lightblue")
 #getPalette = colorRampPalette(brewer.pal(6, "Set1"))
 
-ggplot(data=data.wide, aes(x=Var1, y=value, fill=Var2)) + geom_bar(stat='identity', position = "fill") +
-        scale_fill_manual(values=hexcolors, guide = guide_legend(title = 'Taxa',keyheight = .5)) +
-        labs(x="Site", y="Taxonomy",title=paste("Taxonomy Distribution\n(Rank: ",rank,")",sep="")) +
-        theme(text = element_text(size=7), axis.text.x = element_text(angle = 90, vjust=1), plot.title = element_text(lineheight=.8, face="bold"))
-
+if(show_legend == TRUE){
+     ggplot(data=data.wide, aes(x=Var1, y=value, fill=Var2)) + geom_bar(stat='identity', position = "fill") +
+         coord_flip() +
+         scale_fill_manual(values=hexcolors, guide = guide_legend(title = 'Taxa',keyheight = .5)) +
+         labs(x="Site", y="Taxonomy",title=paste("Taxonomy Distribution\n(Rank: ",rank,")",sep="")) +
+         theme(text = element_text(size=7), axis.text.x = element_text(angle = 90, vjust=1), plot.title = element_text(lineheight=.8, face="bold"))
+    
+}else{
+     ggplot(data=data.wide, aes(x=Var1, y=value, fill=Var2)) + geom_bar(stat='identity', position = "fill") +
+        coord_flip() +
+         scale_fill_manual(values=hexcolors, guide = FALSE) +
+         labs(x="Site", y="Taxonomy",title=paste("Taxonomy Distribution\n(Rank: ",rank,")",sep="")) +
+         theme(text = element_text(size=7), axis.text.x = element_text(angle = 90, vjust=1), plot.title = element_text(lineheight=.8, face="bold")) 
+}
 
 dev.off()
 q()
@@ -104,10 +115,6 @@ for(i in 1:length(names))
     ds<-ds[which(rowSums(ds) > 0),]
     print(ds)
     #lbls<-paste(names(ds), "\n", ds, sep="")
-    
-    
-   
-    
     
     pie(ds, radius=0.5, main=pdf_title)
 

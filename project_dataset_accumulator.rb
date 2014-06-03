@@ -105,11 +105,11 @@ class ProjectDatasetAccumulator
 
 	end
 #================================================================================================#
-	def create_heatmap(matrix_type)
+	def create_heatmap(matrix_type, output_type='pdf')
 	
-	    if matrix_type == 'counts'
-	        counts_table_path   = @myconfig[:files_dir]+@myconfig[:tax_counts_output_filename]
-	        heatmap_table_path  = @myconfig[:files_dir]+@myconfig[:heatmap_counts_output_filename]
+	    if matrix_type == 'counts' && output_type == 'pdf'
+	        counts_table_path   = @myconfig[:files_dir]+@myconfig[:counts_filename]
+	        heatmap_table_path  = @myconfig[:files_dir]+@myconfig[:heatmap_counts_filename]
 	        if !File.exist?(counts_table_path)
               write_counts_table()
             end
@@ -122,9 +122,9 @@ class ProjectDatasetAccumulator
             ]
 	        outfile = @myscripts.run(:heatmap_counts, args)
 	        
-	    elsif matrix_type == 'distance'
-	        distance_table_path = @myconfig[:files_dir]+@myconfig[:dist_output_filename]
-	        heatmap_table_path  = @myconfig[:files_dir]+@myconfig[:heatmap_distance_output_filename]
+	    elsif matrix_type == 'distance' && output_type == 'pdf'
+	        distance_table_path = @myconfig[:files_dir]+@myconfig[:distance_filename]
+	        heatmap_table_path  = @myconfig[:files_dir]+@myconfig[:heatmap_distance_filename]
 	        if !File.exist?(distance_table_path)
                 create_distance_matrix()
             end
@@ -132,11 +132,23 @@ class ProjectDatasetAccumulator
             args = [
               distance_table_path,    # infile
               heatmap_table_path,   # outfile
-              @rank                 # rank
-                         
+              @rank                 # rank             
             ]
             outfile = @myscripts.run(:heatmap_distance, args)
-            
+        
+        elsif matrix_type == 'distance' && output_type == 'html'
+	        distance_table_path = @myconfig[:files_dir]+@myconfig[:distance_filename]
+	        heatmap_table_path  = @myconfig[:files_dir]+@myconfig[:heatmap_distance_html_filename]
+	        if !File.exist?(distance_table_path)
+                create_distance_matrix()
+            end
+            puts 'RUN DISTANCE HEATMAP HTML SCRIPT'
+            args = [
+              distance_table_path,    # infile
+              heatmap_table_path,     # outfile
+              @myconfig[:dmetric]    # distance metric            
+            ]
+            outfile = @myscripts.run(:heatmap_html, args)    
 	    end
 	    
 	    return heatmap_table_path
@@ -145,8 +157,8 @@ class ProjectDatasetAccumulator
 #================================================================================================#
 	def create_distance_matrix()
 	    # distance relies on counts table so we need to check for it
-	    counts_table_path   = @myconfig[:files_dir]+@myconfig[:tax_counts_output_filename]
-	    distance_table_path = @myconfig[:files_dir]+@myconfig[:dist_output_filename]
+	    counts_table_path   = @myconfig[:files_dir]+@myconfig[:counts_filename]
+	    distance_table_path = @myconfig[:files_dir]+@myconfig[:distance_filename]
 	    if !File.exist?(counts_table_path)
 	      write_counts_table()
         end
@@ -162,7 +174,7 @@ class ProjectDatasetAccumulator
 
 #================================================================================================#	
 	def write_counts_table()
-	    filename    = @myconfig[:files_dir]+@myconfig[:tax_counts_output_filename]
+	    filename    = @myconfig[:files_dir]+@myconfig[:counts_filename]
 	  
 	    puts "\nStarting to write counts output file: "+filename
 		# units can be tax_silva, tax_rdp, tax_gg, otus, nodes, ...
@@ -171,7 +183,7 @@ class ProjectDatasetAccumulator
 		# unit2   4   4   0
 		# unit3   3   7   1
 		# unit4   0   0   1
-		txt = "UNITS"
+		txt = "UNITS:"+@myconfig[:units]
 		@dataset_ids_order.each do |id|
 		    txt += "\t" + @dataset_names_by_id[id]
 		end
@@ -201,78 +213,109 @@ class ProjectDatasetAccumulator
 #================================================================================================#
 	def create_piechart(pie_type, dataset_id=nil)
 	
-        counts_table_path   = @myconfig[:files_dir]+@myconfig[:tax_counts_output_filename]
+        counts_table_path   = @myconfig[:files_dir]+@myconfig[:counts_filename]
         if !File.exist?(counts_table_path)
 	        write_counts_table()
         end
         
         if pie_type == 'all'
-            puts 'RUN PIECHART ALL SCRIPT'
-            piechart_path       = @myconfig[:files_dir]+@myconfig[:piechart_all_output_filename]
-            ds_names = []
-            @dataset_ids_order.each do |id|
-                ds_names << @dataset_names_by_id[id]
-            end
-            args = [
-              counts_table_path,        # infile: cols are datasets
-                                        # and in same order as dataset_ids_order list
-              piechart_path,            # outfile
-              ds_names.join(',')        # names in column order
-            ]
-            outfile = @myscripts.run(:piechart_all, args)
+#             puts 'RUN PIECHART ALL SCRIPT'
+#             piechart_path       = @myconfig[:files_dir]+@myconfig[:piechart_all_filename]
+#             ds_names = []
+#             @dataset_ids_order.each do |id|
+#                 ds_names << @dataset_names_by_id[id]
+#             end
+#             args = [
+#               counts_table_path,        # infile: cols are datasets
+#                                         # and in same order as dataset_ids_order list
+#               piechart_path,            # outfile
+#               ds_names.join(',')        # names in column order
+#             ]
+#             outfile = @myscripts.run(:piechart_all, args)
             
         else
             puts 'RUN PIECHART SINGLE SCRIPT'
-            piechart_path       = @myconfig[:files_dir]+@myconfig[:piechart_single_output_filename]
+            ds_name = @dataset_names_by_id[dataset_id]
+            if ds_name.nil?
+                ds_name = @dataset_names_by_id.values[0]
+            end
+            piechart_path       = @myconfig[:files_dir]+@myconfig[:piechart_single_filename]
             #dataset_id_hash = Hash[@dataset_ids_order.map.with_index.to_a]    # => {id1=>0, id2=>1, id3=>2}
             dsid = 4
             
             args = [
               counts_table_path,                # infile: cols are datasets
-                                                # and in same order as dataset_ids_order list
+                                                #      and in same order as dataset_ids_order list
               piechart_path,                    # outfile
-              @dataset_names_by_id[dataset_id]  # name (column)
+              ds_name                           # name (column) -- needed to get correct column from counts table
             ]
             outfile = @myscripts.run(:piechart_single, args)
         end
         
-	    
 	    return piechart_path
         
 	end
 #================================================================================================#
-	def create_barcharts
-        counts_table_path   = @myconfig[:files_dir]+@myconfig[:tax_counts_output_filename]
-        barchart_path       = @myconfig[:files_dir]+@myconfig[:barchart_output_filename]
+	def create_barcharts(output_type='pdf')
+        counts_table_path   = @myconfig[:files_dir]+@myconfig[:counts_filename]
+        if !File.exist?(counts_table_path)
+            write_counts_table()
+        end
+        if output_type == 'pdf'
+            barchart_path       = @myconfig[:files_dir]+@myconfig[:barchart_filename]
+            
+            puts 'RUN BARCHART SCRIPT'
+            args = [
+              counts_table_path,        # infile: cols are datasets
+                                        # and in same order as dataset_ids_order list
+              barchart_path,            # outfile
+              @rank,                     # rank
+              'TRUE'                      # show legend on plot?
+            ]
+            outfile = @myscripts.run(:barchart, args)
+        
+        else
+            barchart_path       = @myconfig[:files_dir]+@myconfig[:barchart_html_filename]
+            
+            puts 'RUN BARCHART HTML SCRIPT'
+            args = [
+              counts_table_path,        # infile: cols are datasets
+                                        # and in same order as dataset_ids_order list
+              barchart_path,            # outfile
+              @rank,                     # rank
+              'TRUE'                      # show legend on plot?
+            ]
+            outfile = @myscripts.run(:barchart_html, args)
+        end
+        return barchart_path
+	end
+#================================================================================================#
+	def create_alpha_diversity
+        counts_table_path      = @myconfig[:files_dir]+@myconfig[:counts_filename]
+        alpha_text_path        = @myconfig[:files_dir]+@myconfig[:alpha_text_filename]
+        alpha_plots_path       = @myconfig[:files_dir]+@myconfig[:alpha_plots_filename]
         if !File.exist?(counts_table_path)
 	        write_counts_table()
         end
         
-        
-        puts 'RUN BARCHART SCRIPT'
-        
-        ds_names = []
-        @dataset_ids_order.each do |id|
-            ds_names << @dataset_names_by_id[id]
-        end
+        puts 'RUN ALPHA DIV SCRIPT'
+        depth = 1000
         args = [
           counts_table_path,        # infile: cols are datasets
                                     # and in same order as dataset_ids_order list
-          barchart_path,            # outfile
-          @rank                     # rank
-          #ds_names.join(',')        # names in column order
+          alpha_text_path,          # text outfile
+          alpha_plots_path,         # abundance plots outfile
+          @rank,                    # rank
+          @myconfig[:sub_sampling_depth]   # sampling depth
         ]
-        outfile = @myscripts.run(:barchart, args)
-	end
-#================================================================================================#
-	def alpha_diversity
-
+        outfile = @myscripts.run(:alpha_diversity, args)
+        return alpha_text_path
 	end
 #================================================================================================#
 	def create_dendrogram
-        distance_table_path = @myconfig[:files_dir]+@myconfig[:dist_output_filename]
-        dendrogram_plot_path     = @myconfig[:files_dir]+@myconfig[:dendrogram_plot_output_filename]
-        dendrogram_tree_path     = @myconfig[:files_dir]+@myconfig[:dendrogram_tree_output_filename]
+        distance_table_path = @myconfig[:files_dir]+@myconfig[:distance_filename]
+        dendrogram_plot_path     = @myconfig[:files_dir]+@myconfig[:dendrogram_plot_filename]
+        dendrogram_tree_path     = @myconfig[:files_dir]+@myconfig[:dendrogram_tree_filename]
         if !File.exist?(distance_table_path)
 	        create_distance_matrix()
         end
@@ -287,7 +330,24 @@ class ProjectDatasetAccumulator
 	    outfile = @myscripts.run(:dendrogram, args)
 	    return dendrogram_plot_path
 	end
-
+#================================================================================================#
+	def create_pcoa
+        distance_table_path = @myconfig[:files_dir]+@myconfig[:distance_filename]
+        pcoa_plot_path  = @myconfig[:files_dir]+@myconfig[:pcoa_filename]
+        counts_table_path      = @myconfig[:files_dir]+@myconfig[:counts_filename]
+        if !File.exist?(distance_table_path)
+            create_distance_matrix()
+        end
+        puts 'RUN PCOA SCRIPT'
+	    args = [
+	      distance_table_path,      # infile
+	      pcoa_plot_path,     # outfile tree
+	      @myconfig[:dmetric]  # distance metric
+	     
+	    ]
+	    outfile = @myscripts.run(:pcoa, args)
+	    return pcoa_plot_path
+	end
 #================================================================================================#	
 	def reorder_datasets
 	
@@ -442,12 +502,19 @@ private
             elsif @rank == 'family'
                 taxon = row['domain']+';'+row['phylum']+';'+row['klass']+';'+row['orderx']+';'+row['family']
             elsif @rank == 'genus'
+                if row['genus']==''
+                    row['genus'] = 'genus_NA'
+                end
                 taxon = row['domain']+';'+row['phylum']+';'+row['klass']+';'+row['orderx']+';'+row['family']+';'+row['genus']
-            elsif @rank == 'species' && row['species'] != ''
+            elsif @rank == 'species'
+                if row['species']==''
+                    row['species'] = 'species_NA'
+                end
                 taxon = row['domain']+';'+row['phylum']+';'+row['klass']+';'+row['orderx']+';'+row['family']+';'+row['genus']+';'+row['species']
             else
                 # ERROR
-                taxon =''
+                puts 'Could not find RANK -- Exiting'
+                exit
             end
             
             if @normalization == 'maximum'
